@@ -15,5 +15,9 @@ mapit_database = 'cstdm_db'
 #models = ['ETM','LDCVM','LDPTM', 'Loaded_Network', 'OD', 'SDCVM', 'SDPTM']
 current_scenario = 'base_2010'
 
+#methods
+# possible options are : geographic, fiftyfifty, ecological, additive
+methods = ['geographic', 'fiftyfifty', 'ecological']
+
 LOGFILEPATH="./logs/"
     
