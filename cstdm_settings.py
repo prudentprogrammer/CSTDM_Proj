@@ -12,8 +12,8 @@ mapit_port = 5432
 mapit_schema = "output"
 mapit_database = 'cstdm_db'
 
-models = ['ETM','LDCVM','LDPTM', 'Loaded_Network', 'OD', 'SDCVM', 'SDPTM']
-scenario = 'base_2010'
+#models = ['ETM','LDCVM','LDPTM', 'Loaded_Network', 'OD', 'SDCVM', 'SDPTM']
+current_scenario = 'base_2010'
 
 LOGFILEPATH="./logs/"
     

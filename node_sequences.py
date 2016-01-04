@@ -13,6 +13,14 @@ cursor.execute('SELECT * FROM node_sequences;')
 # retrieve the records from the database
 records = cursor.fetchall()
 
+temp = []
 for i in range(len(records) - 1):
   if (records[i][0] + 1) != (records[i+1][0]):
     print(str(records[i][0]) + " and next is " + str(records[i+1][0]))
+    for j in range(records[i][0] + 1, records[i+1][0]):
+      temp.append(j)
+      
+x = open('output_list.txt', 'w+')
+x.write(str(temp))
+x.close()
+print(len(temp))
