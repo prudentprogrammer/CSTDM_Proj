@@ -31,8 +31,9 @@ def importTables():
           df = pd.read_csv(os.path.join(root, name))
           df.to_sql(fileName, engine, schema='input', if_exists='replace')
           logger.info("Importing the csv: " + fileName + " from the folder " + model)
-        except MemoryError:
+        except Exception as e:
           print('Failed to import the csv ' + fileName)
+          logging.info('Failed to import the csv ' + fileName)
 
         
 if __name__ == "__main__":
