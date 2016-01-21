@@ -711,12 +711,20 @@ def generateInterEcologicalTables():
 
         
 if __name__ == "__main__":
-  #generateGeographicTables()
-  #generateInterOnlyGeographicTables()
-  #generate5050Tables()
-  #generate5050InterOnlyTables()
-  #generateEcologicalTables()
-  generateInterEcologicalTables()
+  if 'geographic' in cs.methods:
+    generateGeographicTables()
+    if cs.interregions:
+      generateInterOnlyGeographicTables()
+      
+  if 'fiftyfifty' in cs.methods:
+    generate5050Tables()
+    if cs.interregions:
+        generate5050InterOnlyTables()
+        
+  if 'ecological' in cs.methods:
+    generateEcologicalTables()
+    if cs.interregions:
+      generateInterEcologicalTables()
     
   
 

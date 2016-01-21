@@ -23,6 +23,7 @@ def generateAggregateTables():
   # conn.cursor will return a cursor object, you can use this cursor to perform queries
   cursor = conn.cursor()
   
+  # Take all the input files and generate aggregation tables
   createTableQuery = r"""
   SELECT table_name FROM information_schema.tables WHERE table_schema='input';
   """
@@ -55,7 +56,7 @@ def generateAggregateTables():
       """ % (aggregationTableName, aggregationTableName, tableName)
       cursor.execute(queryString)
       
-      logging.info(cursor.statusmessage)
+      logging.info("SDPTM Aggregation Table %s created." % tableName)
       conn.commit()
       
     elif "LDPTM" in tableName:
@@ -83,7 +84,7 @@ def generateAggregateTables():
         """ % (aggregationTableName, aggregationTableName, tableName)
         cursor.execute(queryString)
       
-        logging.info(cursor.statusmessage)
+        logging.info("LDPTM Aggregation Table %s created." % tableName)
         conn.commit()
     
     elif "SDCVM" in tableName:
@@ -96,7 +97,7 @@ def generateAggregateTables():
         (
           SELECT R2.*, "RegionID" as origin_region FROM
           (
-             SELECT "SerialNo", "Tour", "Trip", "DPurp", "TourType",  "I", "J", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9" FROM
+             SELECT "SerialNo", "Person", "Tour", "Trip", "DPurp", "TourType",  "I", "J", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9" FROM
             (SELECT * FROM input."%s" WHERE "Mode" = 'H' OR "Mode" = 'I' OR "Mode" = 'L' OR "Mode" = 'M') R1
             INNER JOIN network.mega_table
             ON "I"="A" AND "J"="B"
@@ -109,7 +110,7 @@ def generateAggregateTables():
       """ % (aggregationTableName, aggregationTableName, tableName)
       cursor.execute(queryString)
       
-      logging.info(cursor.statusmessage)
+      logging.info("SDCVM Aggregation Table %s created." % tableName)
       conn.commit()
       
     elif "LDCVM" in tableName:
@@ -135,7 +136,7 @@ def generateAggregateTables():
       """ % (aggregationTableName, aggregationTableName, tableName)
       cursor.execute(queryString)
       
-      logging.info(cursor.statusmessage)
+      logging.info("LDCVM Aggregation Table %s created." % tableName)
       conn.commit()
     
     elif "ETM" in tableName:
@@ -161,7 +162,7 @@ def generateAggregateTables():
       """ % (aggregationTableName, aggregationTableName, tableName)
       cursor.execute(queryString)
       
-      logging.info(cursor.statusmessage)
+      logging.info("ETM Aggregation Table %s created." % tableName)
       conn.commit()
       
       

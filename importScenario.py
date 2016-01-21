@@ -13,7 +13,8 @@ def getLogging():
   logging.basicConfig(filename=fullPath,level=logging.DEBUG, format='%(asctime)s %(message)s')
   logger = logging.getLogger('edge logger')
   return logger
-  
+
+# Imports the appropriate folder containing the scenario  
 def importTables():
   logger = getLogging()
   engine = create_engine('postgresql://postgres:postgres@localhost/cstdm_db')
@@ -26,7 +27,6 @@ def importTables():
       
       for name in files:
         fileName = scenario + '_' + model + '_' + name.replace(".csv", "")
-        print (fileName)
         try:
           df = pd.read_csv(os.path.join(root, name))
           df.to_sql(fileName, engine, schema='input', if_exists='replace')

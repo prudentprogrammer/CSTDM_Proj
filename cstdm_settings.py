@@ -18,6 +18,8 @@ current_scenario = 'base_2010'
 #methods
 # possible options are : geographic, fiftyfifty, ecological, additive
 methods = ['geographic', 'fiftyfifty', 'ecological']
+# Also generate interregional (between regions) output
+interregions = True
 
-LOGFILEPATH="./logs/"
+LOGFILEPATH = "./logs/"
     
