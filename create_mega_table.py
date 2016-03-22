@@ -23,12 +23,12 @@ def create_mega_table_intermediate():
   cursor = conn.cursor()
   
   createTableQuery = r"""
-  DROP TABLE IF EXISTS network.mega_table_intermediate;
-  CREATE TABLE network.mega_table_intermediate
+  DROP TABLE IF EXISTS network.mega_table_with_routes_intermediate;
+  CREATE TABLE network.mega_table_with_routes_intermediate
   (
     "A" integer,
     "B" integer,
-    costs int[],
+    regions int[],
     distances numeric[]
   ); 
   """
@@ -51,7 +51,7 @@ def populate_mega_table_intermediate():
   
   rangeString = r"""
   SELECT MIN("Node"), MAX("Node")
-  FROM input.nodes_to_counties
+  FROM input.nodes_with_regionids
   WHERE "TAZCentroid" = 1;
   """
   
@@ -71,6 +71,7 @@ def populate_mega_table_intermediate():
     listOfTuples = []
     
     # execute the shortest path query
+    '''
     shortestPathQuery = r"""
     SELECT dest_group, array_agg("RegionID") as regions, array_agg(total_cost) AS total_costs FROM
     (
@@ -91,6 +92,26 @@ def populate_mega_table_intermediate():
     GROUP BY dest_group
     ORDER BY dest_group;
     """ % (str(i), str(goodValues).strip('[]'))
+    '''
+    shortestPathQuery = r"""
+    SELECT dest_group, array_agg("RegionID") as regions, array_agg(total_cost) AS total_costs FROM
+    (
+      SELECT dest_group, "RegionID", sum(cost) AS total_cost, (array_agg(seq ORDER BY seq ASC))[1] as seq_ord FROM
+      (
+        SELECT seq, id1 as dest_group, source, target, network.edge_table.cost FROM pgr_kdijkstraPath(
+        'SELECT id, source, target, cost FROM network.edge_table',
+        %s, array[%s], false, false)
+        INNER JOIN network.edge_table ON (id3 = id)
+        ORDER BY seq
+      ) R1
+      INNER JOIN input.node_links_with_regionids
+      ON (R1.source = "A") AND (R1.target = "B")
+      GROUP BY dest_group, "RegionID"
+      ORDER BY seq_ord
+    ) R2
+    GROUP BY dest_group
+    ORDER BY dest_group;
+    """ % (str(i), str(goodValues).strip('[]'))
 
     cursor.execute(shortestPathQuery)
     # retrieve the vertices along with their regions  from the database
@@ -100,7 +121,7 @@ def populate_mega_table_intermediate():
       listOfTuples.append((i, dataPoint[0], dataPoint[1], dataPoint[2]))
    
     args_str = ','.join(['%s' for t in listOfTuples])
-    insert_query = 'INSERT INTO network.mega_table_intermediate VALUES {0}'.format(args_str)
+    insert_query = 'INSERT INTO network.mega_table_with_routes_intermediate VALUES {0}'.format(args_str)
     cursor.execute(insert_query, listOfTuples)
     print str(i) + "ith insert done"
     conn.commit()
@@ -109,7 +130,7 @@ def populate_mega_table_intermediate():
   logger.info("Populated Mega Table Intermediate")
   
   # Redo the steps again but only for ETM Ranges
-  etm_ranges = list(range(1, 54+1))
+  etm_ranges = list(range(1, 51+1))
   for i in etm_ranges:
     listOfTuples = []
     
@@ -117,20 +138,19 @@ def populate_mega_table_intermediate():
     shortestPathQuery = r"""
     SELECT dest_group, array_agg("RegionID") as regions, array_agg(total_cost) AS total_costs FROM
     (
-      SELECT dest_group, initcap("REGION") AS region, SUM(cost) AS total_cost
-      FROM input.node_links
-      INNER JOIN
+      SELECT dest_group, "RegionID", sum(cost) AS total_cost, (array_agg(seq ORDER BY seq ASC))[1] as seq_ord FROM
       (
-       SELECT id1 as dest_group, source, target, network.edge_table.cost FROM pgr_kdijkstraPath(
-       'SELECT id, source, target, cost FROM network.edge_table',
-       %s, array[%s], false, false)
-       INNER JOIN network.edge_table ON (id3 = id)
+        SELECT seq, id1 as dest_group, source, target, network.edge_table.cost FROM pgr_kdijkstraPath(
+        'SELECT id, source, target, cost FROM network.edge_table',
+        %s, array[%s], false, false)
+        INNER JOIN network.edge_table ON (id3 = id)
+        ORDER BY seq
       ) R1
+      INNER JOIN input.node_links_with_regionids
       ON (R1.source = "A") AND (R1.target = "B")
-      GROUP BY dest_group, region
+      GROUP BY dest_group, "RegionID"
+      ORDER BY seq_ord
     ) R2
-    INNER JOIN input.regionid_to_regions
-    ON ("Region" = region)
     GROUP BY dest_group
     ORDER BY dest_group;
     """ % (str(i), str(goodValues).strip('[]'))
@@ -143,7 +163,7 @@ def populate_mega_table_intermediate():
       listOfTuples.append((i, dataPoint[0], dataPoint[1], dataPoint[2]))
    
     args_str = ','.join(['%s' for t in listOfTuples])
-    insert_query = 'INSERT INTO network.mega_table_intermediate VALUES {0}'.format(args_str)
+    insert_query = 'INSERT INTO network.mega_table_with_routes_intermediate VALUES {0}'.format(args_str)
     cursor.execute(insert_query, listOfTuples)
     print str(i) + "ith insert done for ETM"
     conn.commit()
@@ -161,8 +181,8 @@ def create_mega_table_final():
   cursor = conn.cursor()
   
   createTableQuery = r"""
-  DROP TABLE IF EXISTS network.mega_table;
-  CREATE TABLE network.mega_table
+  DROP TABLE IF EXISTS network.mega_table_with_routes;
+  CREATE TABLE network.mega_table_with_routes
   (
     "A" integer,
     "B" integer,
@@ -174,7 +194,8 @@ def create_mega_table_final():
     "R6" numeric,
     "R7" numeric,
     "R8" numeric,
-    "R9" numeric
+    "R9" numeric,
+    route_orders numeric[]
   ); 
   """
   
@@ -193,11 +214,11 @@ def populate_mega_table_final():
   # conn.cursor will return a cursor object, you can use this cursor to perform queries
   cursor = conn.cursor(name='super_cursor', withhold=True)
   
-  cursor.execute("SELECT * FROM network.mega_table_intermediate;");
+  cursor.execute("SELECT * FROM network.mega_table_with_routes_intermediate;");
   print 'Creating the Final Mega Table...'
   while True:
-    rows = cursor.fetchmany(10000)
-    print("Transferring 10000 rows...")
+    rows = cursor.fetchmany(100000)
+    print("Transferring 100000 rows...")
     listOfTuples = []
     if not rows:
       break
@@ -215,14 +236,16 @@ def populate_mega_table_final():
       temp = 0
       # Map the regions to the indices in the python list
       # After that, insert the list into the database
+      # ex:- row[2] = {7, 9, 2, 1}
+      # gl_list = [20, 76, 0, 0, 0, 0, 5, 0, 7]
       for i in row[2]:
         gl_list[i - 1] = float(str(decimal.Decimal(row[3][temp])))
         temp += 1
-      individual_row = (row[0], row[1], gl_list[0], gl_list[1], gl_list[2], gl_list[3], gl_list[4], gl_list[5], gl_list[6], gl_list[7], gl_list[8])
+      individual_row = (row[0], row[1], gl_list[0], gl_list[1], gl_list[2], gl_list[3], gl_list[4], gl_list[5], gl_list[6], gl_list[7], gl_list[8], str(row[2]).replace('[', '{').replace(']','}'))
       listOfTuples.append(individual_row)
     
     args_str = str(listOfTuples).strip('[]')
-    insertQuery = 'INSERT INTO network.mega_table VALUES '+ args_str
+    insertQuery = 'INSERT INTO network.mega_table_with_routes VALUES '+ args_str
     cursor2.execute(insertQuery)
     conn.commit()
       
@@ -234,4 +257,4 @@ if __name__ == "__main__":
   populate_mega_table_intermediate()
   create_mega_table_final()
   populate_mega_table_final()
-  print("Done executing script.")
+  print("Done creating the mega table.")

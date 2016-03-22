@@ -1,3 +1,5 @@
+import os
+
 postgres = "postgres"
 
 # Define databasename and user in PostgreSQL
@@ -7,19 +9,13 @@ pg_host = "localhost"
 pg_database = "cstdm_db"
 pg_port = 5432
 
-mapit_host = "localhost"
-mapit_port = 5432
-mapit_schema = "output"
-mapit_database = 'cstdm_db'
-
-#models = ['ETM','LDCVM','LDPTM', 'Loaded_Network', 'OD', 'SDCVM', 'SDPTM']
+#scenario_path = r'.\base_2040'
 current_scenario = 'base_2010'
 
 #methods
 # possible options are : geographic, fiftyfifty, ecological, additive
-methods = ['geographic', 'fiftyfifty', 'ecological']
+methods = ['additive']
 # Also generate interregional (between regions) output
 interregions = True
 
 LOGFILEPATH = "./logs/"
-    

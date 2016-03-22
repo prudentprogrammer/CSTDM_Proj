@@ -14,13 +14,14 @@ def getLogging():
   return logger
 
 def exportTables():
-  outputPathFolders = [r".\output", r".\output\all_results", r".\output\interregional_results"]
+  mainFolderName = r"outputs\output_%s" % cs.current_scenario
+  outputPathFolders = [mainFolderName, mainFolderName + r"\all_results", mainFolderName + r"\interregional_results"]
   for folder in outputPathFolders:
     if not os.path.exists(folder):
       os.makedirs(folder)
   
 
-  conn_string = "host='"+cs.pg_host+"' dbname='"+cs.mapit_database+"' user='"+cs.pg_user+"' password='"+cs.pg_password+"' port='"+str(cs.mapit_port)+"'"
+  conn_string = "host='"+cs.pg_host+"' dbname='"+cs.pg_database+"' user='"+cs.pg_user+"' password='"+cs.pg_password+"' port='"+str(cs.pg_port)+"'"
   # get a connection, if a connect cannot be made an exception will be raised here
   conn = psycopg2.connect(conn_string)
   # conn.cursor will return a cursor object, you can use this cursor to perform queries
@@ -35,27 +36,27 @@ def exportTables():
   
   for table in records:
     table = table[0]
-    query = r"""
-    SELECT "Region", ROUND(COALESCE(percentages, 0), 5) AS "Percentages"
-    FROM output."%s"
-    LEFT JOIN input.regionid_to_regions
-    ON countyid = "RegionID"
-    """ % (table)
-    
-    outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(query)
-    fileName = ''
-    if "inter" in table:
-      fileName = r".\output\interregional_results\%s.csv" % table
-    else:
-      fileName = r".\output\all_results\%s.csv" % table
+    if cs.current_scenario in table:
+      query = r"""
+      SELECT "Region", ROUND(COALESCE(percentages, 0), 5) AS "Percentages", total_sum as "Total Sum"
+      FROM output."%s"
+      LEFT JOIN input.regionid_to_regions
+      ON countyid = "RegionID"
+      WHERE "Region" != 'Unknown'
+      """ % (table)
+      
+      outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(query)
+      fileName = ''
+      if "inter" in table:
+        fileName = r".\%s\interregional_results\%s.csv" % (mainFolderName, table)
+      else:
+        fileName = r".\%s\all_results\%s.csv" % (mainFolderName, table)
 
-    with open(fileName, 'w+') as f:
-      cursor.copy_expert(outputquery, f)
+      with open(fileName, 'w+') as f:
+        cursor.copy_expert(outputquery, f)
   
   conn.commit()
   print "Done exporting tables."
-
-
 
 
 if __name__ == "__main__":
