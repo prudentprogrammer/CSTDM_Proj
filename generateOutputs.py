@@ -1275,15 +1275,15 @@ def generateInterAdditiveTables():
     DROP TABLE IF EXISTS process."%s";
       CREATE TABLE process."%s" AS
       SELECT
-      SUM("R1 SUM") * 20.842262293 AS "R1 SUM",
+      SUM("R1 SUM") AS "R1 SUM",
       SUM("R2 SUM") AS "R2 SUM",
-      SUM("R3 SUM") * 16.803222028 AS "R3 SUM",
-      SUM("R4 SUM") * 8.5618676 AS "R4 SUM",
-      SUM("R5 SUM") * 14.824498647 AS "R5 SUM",
-      SUM("R6 SUM") * 7.159046538 AS "R6 SUM",
-      SUM("R7 SUM") * 14.52815426 AS "R7 SUM",
-      SUM("R8 SUM") * 4.699753443 AS "R8 SUM",
-      SUM("R9 SUM") * 2.313 AS "R9 SUM"
+      SUM("R3 SUM") AS "R3 SUM",
+      SUM("R4 SUM") AS "R4 SUM",
+      SUM("R5 SUM") AS "R5 SUM",
+      SUM("R6 SUM") AS "R6 SUM",
+      SUM("R7 SUM") AS "R7 SUM",
+      SUM("R8 SUM") AS "R8 SUM",
+      SUM("R9 SUM") AS "R9 SUM"
     
       FROM
       
