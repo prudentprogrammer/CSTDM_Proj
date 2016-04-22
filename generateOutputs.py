@@ -657,7 +657,7 @@ def generateInterEcologicalTables():
 
   for record in records:
     tableName = record[0]
-    if cs.current_scenario in tableName and "Fuel" not in tableName:
+    if cs.current_scenario in tableName: #and "Fuel" not in tableName:
      
       print 'Now processing step 1 for inter ecological', tableName
       
@@ -677,10 +677,10 @@ def generateInterEcologicalTables():
             array_agg("Leg"::text || ':' || destination_region::text) AS dest_region,
             (array_agg("origin_region"))[1] as origin_region, 
             (array_agg("destination_region"))[array_upper(array_agg(destination_region), 1)] as destination_region
-             FROM network."%s" 
+             FROM (SELECT * FROM network."%s" WHERE origin_region != destination_region) inter_trips
              GROUP BY "SerialNo", "Person", "Tour"
         ) temp_table 
-        WHERE origin_region != destination_region
+        
         """ % (aggregationTableName, aggregationTableName, tableName)
         cursor.execute(queryString)
         conn.commit()
@@ -707,9 +707,8 @@ def generateInterEcologicalTables():
             SUM("R9") AS "R9",
             (array_agg("origin_region"))[1] as origin_region, 
             (array_agg("destination_region"))[array_upper(array_agg(destination_region), 1)] as destination_region
-             FROM network."%s" GROUP BY "SerialNo", "Person", "Tour"
+             FROM (SELECT * FROM network."%s" WHERE origin_region != destination_region) inter_trips GROUP BY "SerialNo", "Person", "Tour"
 			     ) temp_table 
-           WHERE origin_region != destination_region
            GROUP BY "SerialNo", "Person", "Tour"
         ) final_table
      
@@ -740,10 +739,9 @@ def generateInterEcologicalTables():
               SUM("R9") AS "R9",
               (array_agg("origin_region"))[1] as origin_region, 
               (array_agg("destination_region"))[array_upper(array_agg(destination_region), 1)] as destination_region
-               FROM network."%s" 
+               FROM (SELECT * FROM network."%s" WHERE origin_region != destination_region) inter_trips
                GROUP BY "SerialNo", "Person", "Tour"
             ) temp_table
-              WHERE origin_region != destination_region
               GROUP BY "SerialNo", "Person", "Tour"
          ) temp1
          GROUP BY dest_region;
@@ -1085,7 +1083,7 @@ def generateInterAdditiveTables():
 
   for record in records:
     tableName = record[0]
-    if cs.current_scenario in tableName and "Fuel" not in tableName:
+    if cs.current_scenario in tableName: #and "Fuel" not in tableName:
       aggregationTableName = tableName.replace('_aggregation_table', '_inter_additive_intermediate_one')
       queryString = ''
       if 'SDPTM' in aggregationTableName:
@@ -1124,10 +1122,9 @@ def generateInterAdditiveTables():
           "SerialNo",
           "Person",
           "Tour"
-        FROM network."%s"
+        FROM (SELECT * FROM network."%s" WHERE origin_region != destination_region) inter_trips
         GROUP BY "SerialNo", "Person", "Tour" 
 		) temp_table
-		WHERE origin_region != destination_region
         """ % (aggregationTableName, aggregationTableName, tableName)
       else:
         continue
@@ -1251,7 +1248,7 @@ def generateInterAdditiveTables():
             (
               SELECT "SerialNo", "Person", "Tour", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", origin_region, destination_region, SUM("R1"+"R2"+"R3"+"R4"+"R5"+"R6"+"R7"+"R8"+"R9")
               OVER (PARTITION BY  "SerialNo", "Person", "Tour",  "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", origin_region, destination_region)
-              FROM network."%s"
+              FROM (SELECT * FROM network."%s" WHERE origin_region != destination_region) inter_trips
             )temp
           GROUP BY "SerialNo", "Person", "Tour"
           ) R1
