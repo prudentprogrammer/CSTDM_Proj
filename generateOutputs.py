@@ -145,24 +145,58 @@ def generateInterOnlyGeographicTables():
         tableList['ETM'].append(aggregationTableName)
 
       print 'Now processing', tableName
-      queryString = r"""
-        DROP TABLE IF EXISTS process."%s";
-        CREATE TABLE process."%s" AS
-        SELECT 
-        SUM("R1") AS "R1 SUM",
-        SUM("R2") AS "R2 SUM",
-        SUM("R3") AS "R3 SUM",
-        SUM("R4") AS "R4 SUM",
-        SUM("R5") AS "R5 SUM",
-        SUM("R6") AS "R6 SUM",
-        SUM("R7") AS "R7 SUM",
-        SUM("R8") AS "R8 SUM",
-        SUM("R9") AS "R9 SUM",
-        SUM("R1"+ "R2" + "R3" + "R4" + "R5" + "R6" + "R7" + "R8" + "R9") AS "TOTAL SUM"
-        FROM (SELECT * FROM network."%s" WHERE origin_region != destination_region) temp;
-      """ % (aggregationTableName, aggregationTableName, tableName)
+      queryString = ''
+      if aggregationTableName in ['SDPTM', 'LDPTM', 'SDCVM']:
+        queryString = r"""
+          DROP TABLE IF EXISTS process."%s";
+          CREATE TABLE process."%s" AS
+          SELECT 
+          SUM("R1") AS "R1 SUM",
+          SUM("R2") AS "R2 SUM",
+          SUM("R3") AS "R3 SUM",
+          SUM("R4") AS "R4 SUM",
+          SUM("R5") AS "R5 SUM",
+          SUM("R6") AS "R6 SUM",
+          SUM("R7") AS "R7 SUM",
+          SUM("R8") AS "R8 SUM",
+          SUM("R9") AS "R9 SUM",
+          SUM("R1"+ "R2" + "R3" + "R4" + "R5" + "R6" + "R7" + "R8" + "R9") AS "TOTAL SUM"
+          FROM (
+            SELECT network."%s".*
+            FROM network."%s"
+            INNER JOIN
+            (
+              SELECT "SerialNo", "Person", "Tour"
+              FROM network."%s" 
+              WHERE origin_region != destination_region
+            ) inter_trips
+            USING ("SerialNo", "Person", "Tour")
+          ) temp;
+        """ % (aggregationTableName, aggregationTableName, tableName, tableName, tableName)
+        
+      else:
+        queryString = r"""
+          DROP TABLE IF EXISTS process."%s";
+          CREATE TABLE process."%s" AS
+          SELECT 
+          SUM("R1") AS "R1 SUM",
+          SUM("R2") AS "R2 SUM",
+          SUM("R3") AS "R3 SUM",
+          SUM("R4") AS "R4 SUM",
+          SUM("R5") AS "R5 SUM",
+          SUM("R6") AS "R6 SUM",
+          SUM("R7") AS "R7 SUM",
+          SUM("R8") AS "R8 SUM",
+          SUM("R9") AS "R9 SUM",
+          SUM("R1"+ "R2" + "R3" + "R4" + "R5" + "R6" + "R7" + "R8" + "R9") AS "TOTAL SUM"
+          FROM (
+            
+              SELECT *
+              FROM network."%s" 
+              WHERE origin_region != destination_region
+            ) inter_trips
+        """ % (aggregationTableName, aggregationTableName, tableName)
       cursor.execute(queryString)
-      
       logging.info(cursor.statusmessage)
       conn.commit()
 
@@ -657,7 +691,7 @@ def generateInterEcologicalTables():
 
   for record in records:
     tableName = record[0]
-    if cs.current_scenario in tableName: #and "Fuel" not in tableName:
+    if cs.current_scenario in tableName: # and "Fuel" not in tableName:
      
       print 'Now processing step 1 for inter ecological', tableName
       
@@ -677,11 +711,20 @@ def generateInterEcologicalTables():
             array_agg("Leg"::text || ':' || destination_region::text) AS dest_region,
             (array_agg("origin_region"))[1] as origin_region, 
             (array_agg("destination_region"))[array_upper(array_agg(destination_region), 1)] as destination_region
-             FROM (SELECT * FROM network."%s" WHERE origin_region != destination_region) inter_trips
+             FROM (SELECT network."%s".*
+            FROM network."%s"
+            INNER JOIN
+            (
+              SELECT "SerialNo", "Person", "Tour"
+              FROM network."%s" 
+              WHERE origin_region != destination_region
+            ) inter_trips
+            USING ("SerialNo", "Person", "Tour")
+          ) temp
              GROUP BY "SerialNo", "Person", "Tour"
         ) temp_table 
         
-        """ % (aggregationTableName, aggregationTableName, tableName)
+        """ % (aggregationTableName, aggregationTableName, tableName, tableName, tableName)
         cursor.execute(queryString)
         conn.commit()
 
@@ -707,13 +750,24 @@ def generateInterEcologicalTables():
             SUM("R9") AS "R9",
             (array_agg("origin_region"))[1] as origin_region, 
             (array_agg("destination_region"))[array_upper(array_agg(destination_region), 1)] as destination_region
-             FROM (SELECT * FROM network."%s" WHERE origin_region != destination_region) inter_trips GROUP BY "SerialNo", "Person", "Tour"
+             FROM (SELECT network."%s".*
+            FROM network."%s"
+            INNER JOIN
+            (
+              SELECT "SerialNo", "Person", "Tour"
+              FROM network."%s" 
+              WHERE origin_region != destination_region
+            ) inter_trips
+            USING ("SerialNo", "Person", "Tour")
+          ) temp
+             
+             GROUP BY "SerialNo", "Person", "Tour"
 			     ) temp_table 
            GROUP BY "SerialNo", "Person", "Tour"
         ) final_table
      
         GROUP BY dest_region;
-        """ % (aggregationTableName, aggregationTableName, tableName)
+        """ % (aggregationTableName, aggregationTableName, tableName,tableName, tableName)
         cursor.execute(queryString)
         conn.commit()
 
@@ -739,13 +793,25 @@ def generateInterEcologicalTables():
               SUM("R9") AS "R9",
               (array_agg("origin_region"))[1] as origin_region, 
               (array_agg("destination_region"))[array_upper(array_agg(destination_region), 1)] as destination_region
-               FROM (SELECT * FROM network."%s" WHERE origin_region != destination_region) inter_trips
+               FROM (
+               SELECT network."%s".*
+            FROM network."%s"
+            INNER JOIN
+            (
+              SELECT "SerialNo", "Person", "Tour"
+              FROM network."%s" 
+              WHERE origin_region != destination_region
+            ) inter_trips
+            USING ("SerialNo", "Person", "Tour")
+          ) temp
+               
+               
                GROUP BY "SerialNo", "Person", "Tour"
             ) temp_table
               GROUP BY "SerialNo", "Person", "Tour"
          ) temp1
          GROUP BY dest_region;
-        """ % (aggregationTableName, aggregationTableName, tableName)
+        """ % (aggregationTableName, aggregationTableName, tableName,tableName, tableName)
         cursor.execute(queryString)
         conn.commit()
 
@@ -1354,7 +1420,7 @@ def accumulate(iterable, func=operator.add):
         
 if __name__ == "__main__":
   if 'geographic' in cs.methods:
-    generateGeographicTables()
+    #generateGeographicTables()
     if cs.interregions:
       generateInterOnlyGeographicTables()
       
